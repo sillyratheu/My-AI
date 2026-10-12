@@ -1,44 +1,41 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from transformers import AutoModelForCausalLM, AutoTokenizer
-import torch
+import requests
+import os
+import uvicorn
 
-app = FastAPI(title="Render Free LLM API")
+app = FastAPI(title="Lightweight Hugging Face Proxy API")
 
-# একটি হালকা ও ফাস্ট মডেল লোড করা (CPU-র জন্য অপ্টিমাইজড)
-MODEL_NAME = "microsoft/Phi-3-mini-4k-instruct"
-
-print("Loading model... Please wait...")
-tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-model = AutoModelForCausalLM.from_pretrained(
-    MODEL_NAME, 
-    torch_dtype=torch.float32, 
-    low_cpu_mem_usage=True
-)
-print("Model loaded successfully!")
+API_URL = "https://api-inference.huggingface.co/models/google/gemma-2-2b-it"
+HF_TOKEN = os.getenv("HF_TOKEN", "hf_free_token_placeholder")
 
 class PromptRequest(BaseModel):
     prompt: str
 
 @app.post("/generate")
 def generate_text(request: PromptRequest):
-    try:
-        inputs = tokenizer(request.prompt, return_tensors="pt")
-        
-        # জেনারেট করার প্যারামিটার
-        outputs = model.generate(
-            **inputs, 
-            max_new_tokens=150, 
-            temperature=0.7, 
-            do_sample=True
-        )
-        
-        response_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
-        return {"status": "success", "reply": response_text}
+    headers = {"Authorization": f"Bearer {HF_TOKEN}"}
+    payload = {
+        "inputs": request.prompt,
+        "parameters": {"max_new_tokens": 250, "return_full_text": False}
+    }
     
+    try:
+        response = requests.post(API_URL, headers=headers, json=payload)
+        result = response.json()
+        
+        if isinstance(result, list) and len(result) > 0:
+            reply = result[0].get("generated_text", "No response generated")
+        elif isinstance(result, dict) and "error" in result:
+            reply = f"API Error: {result['error']}"
+        else:
+            reply = str(result)
+            
+        return {"status": "success", "reply": reply}
+        
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=10000)
+    # Render er nirdishto port 10000 e app bind korbe
+    uvicorn.run("app:app", host="0.0.0.0", port=10000)
