@@ -39,3 +39,4 @@ def generate_text(request: PromptRequest):
 if __name__ == "__main__":
     # Render er nirdishto port 10000 e app bind korbe
     uvicorn.run("app:app", host="0.0.0.0", port=10000)
+    
