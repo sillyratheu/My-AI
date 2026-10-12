@@ -23,28 +23,34 @@ def home():
 
 @app.post("/generate")
 def generate_text(request: PromptRequest):
-    user_prompt = request.prompt
+    user_prompt = request.prompt.strip()
+    user_prompt_lower = user_prompt.lower()
     
+    # Kew owner ba creator niye jigges korle ei fixed answer dibe
+    if "owner" in user_prompt_lower or "creator" in user_prompt_lower or "created you" in user_prompt_lower or "who made you" in user_prompt_lower:
+        return {"status": "success", "reply": "Ramim is my owner and creator."}
+
     try:
-        # সিস্টেম প্রম্পটে পরিষ্কার বলে দেওয়া হলো যে এর নাম NotRa এবং এর মালিক Ramim
-        system_instruction = "You are NotRa, an advanced AI assistant. Your creator and owner is Ramim. Never say you are created by OpenAI. Answer cleanly and accurately."
-        full_prompt = f"{system_instruction}\nUser: {user_prompt}\nNotRa:"
-        
-        ai_url = f"https://text.pollinations.ai/{requests.utils.quote(full_prompt)}"
-        
-        response = requests.get(ai_url, timeout=30)
+        ai_url = f"https://text.pollinations.ai/{requests.utils.quote(user_prompt)}"
+        response = requests.get(ai_url, timeout=10)
         
         if response.status_code == 200:
             reply = response.text.strip()
+            
+            # Jodi ai bole openai ba onno kichu, seta override kore dibo
+            if "openai" in reply.lower() or "language model" in reply.lower():
+                reply = "I'm NotRa, what's on your mind today?"
+                
             if not reply:
-                reply = "Hello! Please try sending your message again."
+                reply = "I'm NotRa, what's on your mind today?"
         else:
-            reply = "Servers are busy right now, please try again later!"
+            reply = "I'm NotRa, what's on your mind today?"
             
         return {"status": "success", "reply": reply}
         
     except Exception as e:
-        return {"status": "success", "reply": "Network connection error, please try again!"}
+        return {"status": "success", "reply": "I'm NotRa, what's on your mind today?"}
 
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=10000)
+    
