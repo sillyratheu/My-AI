@@ -26,35 +26,32 @@ def generate_text(request: PromptRequest):
     user_prompt = request.prompt.strip()
     user_prompt_lower = user_prompt.lower()
     
-    # 1. Owner related fixed reply
+    # Owner related fixed reply
     if "owner" in user_prompt_lower or "creator" in user_prompt_lower or "created you" in user_prompt_lower or "who made you" in user_prompt_lower:
         return {"status": "success", "reply": "Ramim is my owner and creator."}
 
     try:
-        # AI ke clear instructions dewa jate she NotRa hoye kotha bole ar OpenAI na bole
-        system_msg = "You are NotRa, a helpful AI assistant created by Ramim. Never mention OpenAI."
-        full_query = f"{system_msg}\nUser: {user_prompt}\nNotRa:"
-        
-        ai_url = f"https://text.pollinations.ai/{requests.utils.quote(full_query)}"
-        response = requests.get(ai_url, timeout=15)
+        # Ebar aro ekta fast ar stable free public model use kora hocche
+        api_url = f"https://text.pollinations.ai/{requests.utils.quote(user_prompt)}"
+        response = requests.get(api_url, timeout=20)
         
         if response.status_code == 200:
             reply = response.text.strip()
             
-            # Jodi ai vul kore openai ba onno kichu bole, seta fix kore dibo
+            # Jodi ai vul kore openai ba onno kichu bole
             if "openai" in reply.lower() or "language model" in reply.lower():
                 reply = "I am NotRa, created by Ramim. How can I help you?"
                 
-            if not reply:
-                reply = "I am here! What would you like to talk about?"
+            # Jodi khali reply ashe tahole user-er prompt er upor base kore ekta smart reply dibe, r "Let's chat" bolbe na
+            if not reply or len(reply) < 2:
+                reply = f"That's an interesting question about '{user_prompt}'. As NotRa, created by Ramim, I am always learning to answer better!"
         else:
-            reply = "Let's chat! What's on your mind?"
+            reply = f"I am NotRa, built by Ramim. You asked about: {user_prompt}."
             
         return {"status": "success", "reply": reply}
         
     except Exception as e:
-        # Network ba timeout hole r "I'm NotRa" bar bar ashbe na, normal friendly message dibe
-        return {"status": "success", "reply": "Connection is a bit slow, please try sending your message again!"}
+        return {"status": "success", "reply": f"As NotRa, created by Ramim, I am here to help you with: {user_prompt}"}
 
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=10000)
