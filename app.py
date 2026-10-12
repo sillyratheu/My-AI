@@ -26,33 +26,37 @@ def generate_text(request: PromptRequest):
     user_prompt = request.prompt.strip()
     user_prompt_lower = user_prompt.lower()
     
-    # Owner related fixed reply
-    if "owner" in user_prompt_lower or "creator" in user_prompt_lower or "created you" in user_prompt_lower or "who made you" in user_prompt_lower:
-        return {"status": "success", "reply": "Ramim is my owner and creator."}
+    # Shudhumatro owner jigges korle ei fixed answer ta dibe, baki shob question AI solve korbe
+    if any(k in user_prompt_lower for k in ["owner", "creator", "created you", "who made you"]):
+        return {"status": "success", "reply": "Ramim is my owner and creator! He built me."}
 
     try:
-        # Ebar aro ekta fast ar stable free public model use kora hocche
-        api_url = f"https://text.pollinations.ai/{requests.utils.quote(user_prompt)}"
-        response = requests.get(api_url, timeout=20)
+        # NotRa identity set kore direct AI er kach thekei real answer ante hobe
+        system_instruction = "You are NotRa, a helpful AI best friend created by Ramim. Give accurate, detailed answers to any question asked by the user. Never mention OpenAI."
+        full_query = f"{system_instruction}\nUser: {user_prompt}\nNotRa:"
+        
+        ai_url = f"https://text.pollinations.ai/{requests.utils.quote(full_query)}"
+        
+        # Timeout 45 seconds kore dewa holo jate deri holeo AI answer generate kore dite pare
+        response = requests.get(ai_url, timeout=45)
         
         if response.status_code == 200:
             reply = response.text.strip()
             
-            # Jodi ai vul kore openai ba onno kichu bole
+            # Jodi AI vul kore openai bole, seta override kore dibo
             if "openai" in reply.lower() or "language model" in reply.lower():
-                reply = "I am NotRa, created by Ramim. How can I help you?"
+                reply = reply.replace("OpenAI", "Ramim").replace("open-ai", "Ramim")
                 
-            # Jodi khali reply ashe tahole user-er prompt er upor base kore ekta smart reply dibe, r "Let's chat" bolbe na
-            if not reply or len(reply) < 2:
-                reply = f"That's an interesting question about '{user_prompt}'. As NotRa, created by Ramim, I am always learning to answer better!"
+            # Jodi kono karone empty ashe, tobe abar try korar kotha bolbe
+            if not reply:
+                reply = "Ektu deri hocche, kintu ami chesta korchi tomar question-er proper answer dite. Abar try koro!"
         else:
-            reply = f"I am NotRa, built by Ramim. You asked about: {user_prompt}."
+            reply = "Server ektu busy, kintu ami answer khujchi. Ektu pore abar pathao!"
             
         return {"status": "success", "reply": reply}
         
     except Exception as e:
-        return {"status": "success", "reply": f"As NotRa, created by Ramim, I am here to help you with: {user_prompt}"}
+        return {"status": "success", "reply": "Connection slow thakay answer aste ektu time lagche, kintu ami answer debo!"}
 
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=10000)
-    
