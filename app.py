@@ -2,12 +2,10 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import requests
-import os
 import uvicorn
 
 app = FastAPI(title="Lightweight Hugging Face Proxy API")
 
-# CORS Middleware যুক্ত করা
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -17,17 +15,17 @@ app.add_middleware(
 )
 
 API_URL = "https://api-inference.huggingface.co/models/google/gemma-2-2b-it"
-HF_TOKEN = os.getenv("HF_TOKEN", "hf_free_token_placeholder")
+
+# তোমার দেওয়া টোকেনটি এখানে বসিয়ে দেওয়া হলো
+HF_TOKEN = "Hf_MVDfxZCrUYpiZHqYuhrTjaEYAYtMEeJXMy"
 
 class PromptRequest(BaseModel):
     prompt: str
 
-# ১. হোম পেজ রুট (যাতে মূল লিঙ্কে ঢুকলে 404 না আসে)
 @app.get("/")
 def home():
-    return {"status": "online", "message": "AI API is running successfully! Use /generate endpoint with POST method."}
+    return {"status": "online", "message": "AI API is running successfully!"}
 
-# ২. জেনারেট রুট
 @app.post("/generate")
 def generate_text(request: PromptRequest):
     headers = {"Authorization": f"Bearer {HF_TOKEN}"}
